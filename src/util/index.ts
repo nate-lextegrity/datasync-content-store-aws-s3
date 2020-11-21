@@ -48,7 +48,7 @@ export const formatConfig = (config) => {
 export const buildAWSConfig = (config) => {
   const awsConfig = {
     apiVersion: config.apiVersion,
-    region: config.region
+    region: config.region,
   }
 
   // https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html

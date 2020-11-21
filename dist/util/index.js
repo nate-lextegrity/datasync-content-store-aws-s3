@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.filterKeys = exports.buildAWSConfig = exports.formatConfig = exports.getPath = void 0;
 const path_1 = require("path");
 exports.getPath = (keys, input, versioning) => {
     const path = [];
@@ -45,7 +46,7 @@ exports.formatConfig = (config) => {
 exports.buildAWSConfig = (config) => {
     const awsConfig = {
         apiVersion: config.apiVersion,
-        region: config.region
+        region: config.region,
     };
     if (process.env.AWS_ACCESS_KEY_ID || (config.credentials && config.credentials.accessKeyId)) {
         awsConfig.accessKeyId = process.env.AWS_ACCESS_KEY_ID || config.credentials.accessKeyId;

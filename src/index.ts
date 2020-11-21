@@ -40,7 +40,7 @@ export const setConfig = (config: IConfig) => {
 
 /**
  * @summary Set asset store
- * @param {object} 
+ * @param {object}
  */
 export const setAssetStore = (instance: IAssetStore) => {
   assetStore = instance
@@ -73,7 +73,7 @@ export const start = (assetStoreInstance?: IAssetStore, config?: IConfig) => {
       return init(appConfig.contentStore)
         .then((awsInstance) => {
           const s3 = new S3(assetStore, awsInstance, appConfig)
-          
+
           return resolve(s3)
         })
         .catch(reject)

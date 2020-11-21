@@ -1,6 +1,6 @@
 import Debug from 'debug'
 import { cloneDeep, map, uniqBy } from 'lodash'
-import { getPath, filterKeys } from './util/index'
+import { filterKeys, getPath } from './util/index'
 import { validatePublishedObject } from './util/validations'
 
 const debug = Debug('content-store-aws-s3')
@@ -86,7 +86,7 @@ interface IContents {
   StorageClass: string,
   Owner: {
     DisplayName: string,
-    ID: string
+    ID: string,
   }
 }
 
@@ -127,15 +127,15 @@ export class S3 implements IContentStore {
   private unwantedKeys: {
     asset: any,
     contentType: any,
-    entry: any
+    entry: any,
   }
   private requiredKeys: {
     asset: any,
     contentType: any,
-    entry: any
+    entry: any,
   }
 
-	constructor (assetStore, s3, config) {
+  constructor(assetStore, s3, config) {
     this.assetStore = assetStore
     this.config = config.contentStore
     this.keys = this.config.internal.keys
@@ -145,9 +145,9 @@ export class S3 implements IContentStore {
     this.patterns = {
       asset: this.config.patterns.asset.split('/'),
       entry: this.config.patterns.entry.split('/'),
-      contentType: this.config.patterns.contentType.split('/')
+      contentType: this.config.patterns.contentType.split('/'),
     }
-	}
+  }
 
   /**
    * @public
@@ -158,10 +158,10 @@ export class S3 implements IContentStore {
    * const s3 = new S3(awsS3Instance, appConfig)
    * return s3.publish(input)
    *  .then((uploadResponse) => console.log(...))
-   * 
+   *
    * @returns {Promise} Returns after uploading the file onto aws s3
    */
-  public publish (publishedObject) {
+  public publish(publishedObject) {
     if (publishedObject.content_type_uid === this.keys.assets) {
       return this.publishAsset(publishedObject)
     }
@@ -169,7 +169,7 @@ export class S3 implements IContentStore {
     return this.publishEntry(publishedObject)
   }
 
-  public publishEntry (publishedEntry: IPublishedEntry) {
+  public publishEntry(publishedEntry: IPublishedEntry) {
     return new Promise(async (resolve, reject) => {
       try {
         debug(`Publishing entry ${JSON.stringify(publishedEntry)}`)
@@ -178,13 +178,13 @@ export class S3 implements IContentStore {
           locale: clonedObject.locale,
           uid: clonedObject.uid,
           content_type_uid: clonedObject.content_type_uid,
-          data: clonedObject.data
+          data: clonedObject.data,
         }
 
         const contentType = {
           uid: clonedObject.content_type_uid,
           content_type_uid: this.keys.content_type_uid,
-          data: (clonedObject as IPublishedEntry).content_type
+          data: (clonedObject as IPublishedEntry).content_type,
         }
 
         validatePublishedObject(entry.data, this.requiredKeys.entry)
@@ -227,7 +227,7 @@ export class S3 implements IContentStore {
     })
   }
 
-  public publishAsset (publishedAsset: IPublishedAsset) {
+  public publishAsset(publishedAsset: IPublishedAsset) {
     return new Promise(async (resolve, reject) => {
       try {
         debug(`Publishing asset ${JSON.stringify(publishedAsset)}`)
@@ -261,7 +261,7 @@ export class S3 implements IContentStore {
     })
   }
 
-  public unpublish (unpublishedObject: IUnpublishedAsset | IUnpublishedEntry) {
+  public unpublish(unpublishedObject: IUnpublishedAsset | IUnpublishedEntry) {
     if (unpublishedObject.content_type_uid === this.keys.assets) {
       return this.unpublishAsset(unpublishedObject)
     }
@@ -269,7 +269,55 @@ export class S3 implements IContentStore {
     return this.unpublishEntry(unpublishedObject)
   }
 
-  private searchS3 (uid: string) {
+  public delete(input: any) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        debug(`Deleting: ${JSON.stringify(input)}`)
+        const matches: any = await this.fetch(input.uid)
+        const Keys: any = await this.fetch(input.uid, true)
+        // what if there are more than 1 matches? TODO: Investigate
+        if (matches.length === 0) {
+          return resolve(input)
+        }
+        const datas: any[] = map(matches, 'data')
+
+        if (input.content_type_uid === this.keys.assets) {
+          await this.assetStore.delete(datas)
+        }
+        const params = cloneDeep(this.config.uploadParams)
+        delete params.ACL
+
+        params.Delete = {
+          Objects: [],
+          Quiet: false,
+        }
+        Keys.forEach((data) => {
+          params.Delete.Objects.push({
+            Key: data.Key,
+          })
+        })
+
+        // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#listObjects-property
+        // params.RequestPayer = 'requester'
+
+        return this.s3.deleteObjects(params)
+          .on('httpUploadProgress', debug)
+          .on('error', reject)
+          .promise()
+          .then((s3Response) => {
+            debug(`deleteObject response: ${JSON.stringify(s3Response, null, 2)}`)
+
+            // TODO: Consideration, what if there are more than 1000 keys? Pagination Required!
+            return resolve(input)
+          })
+          .catch(reject)
+      } catch (error) {
+        return reject(error)
+      }
+    })
+  }
+
+  private searchS3(uid: string) {
     return new Promise((resolve, reject) => {
       const params = cloneDeep(this.config.uploadParams)
       delete params.ACL
@@ -292,7 +340,7 @@ export class S3 implements IContentStore {
     })
   }
 
-  private fetchContents (Prefix, Contents) {
+  private fetchContents(Prefix, Contents) {
     return new Promise((resolve, reject) => {
       const params = cloneDeep(this.config.uploadParams)
       delete params.ACL
@@ -317,14 +365,14 @@ export class S3 implements IContentStore {
     })
   }
 
-  private fetch (uid: string, isDelete: boolean = false) {
+  private fetch(uid: string, isDelete: boolean = false) {
     return new Promise(async (resolve, reject) => {
       try {
-        const Prefixes: { Prefix: string }[] = (await this.searchS3(uid) as { Prefix: string}[])
+        const Prefixes: Array<{ Prefix: string }> = (await this.searchS3(uid) as Array<{ Prefix: string}>)
         const UniqPrefixes = uniqBy(Prefixes, 'Prefix')
         debug(`Unique prefixes found ${JSON.stringify(UniqPrefixes)}`)
         const Contents: IContents[] = []
-        const promises: Promise<any>[] = []
+        const promises: Array<Promise<any>> = []
 
         UniqPrefixes.forEach((CommonPrefix) => {
           promises.push(this.fetchContents(CommonPrefix.Prefix, Contents))
@@ -333,7 +381,7 @@ export class S3 implements IContentStore {
         return Promise.all(promises)
           .then(() => {
             const UniqContents: IContents[] = uniqBy(Contents, 'Key')
-            const promises2: Promise<any>[] = []
+            const promises2: Array<Promise<any>> = []
             const Items: IContents[] = []
             debug(`Unique Contents found: ${JSON.stringify(UniqContents)}`)
 
@@ -360,7 +408,7 @@ export class S3 implements IContentStore {
             if (isDelete) {
               return Items
             }
-            const promises3: Promise<any>[] = []
+            const promises3: Array<Promise<any>> = []
             const ItemsData: any = []
             Items.forEach((Item) => {
               promises3.push(this.getObject(Item, ItemsData))
@@ -379,7 +427,7 @@ export class S3 implements IContentStore {
     })
   }
 
-  private getObject (Item, ItemsData) {
+  private getObject(Item, ItemsData) {
     return new Promise((resolve, reject) => {
       const params = cloneDeep(this.config.uploadParams)
       delete params.ACL
@@ -403,7 +451,7 @@ export class S3 implements IContentStore {
     })
   }
 
-  private unpublishAsset (asset: IUnpublishedAsset) {
+  private unpublishAsset(asset: IUnpublishedAsset) {
     return new Promise(async (resolve, reject) => {
       try {
         debug(`Unpublishing asset ${JSON.stringify(asset)}`)
@@ -417,7 +465,7 @@ export class S3 implements IContentStore {
             break
           }
         }
-        
+
         if (typeof publishedAsset === 'undefined') {
           return resolve(asset)
         }
@@ -436,7 +484,7 @@ export class S3 implements IContentStore {
           .promise()
           .then((s3Response) => {
             debug(`deleteObject response: ${JSON.stringify(s3Response, null, 2)}`)
-            
+
             // TODO: Consideration, what if there are more than 1000 keys? Pagination Required!
             return resolve(asset)
           })
@@ -447,7 +495,7 @@ export class S3 implements IContentStore {
     })
   }
 
-  private unpublishEntry (entry: IUnpublishedEntry) {
+  private unpublishEntry(entry: IUnpublishedEntry) {
     return new Promise(async (resolve, reject) => {
       try {
         const entries: any = await this.fetch(entry.uid)
@@ -477,57 +525,9 @@ export class S3 implements IContentStore {
           .promise()
           .then((s3Response) => {
             debug(`deleteObject response: ${JSON.stringify(s3Response, null, 2)}`)
-            
+
             // TODO: Consideration, what if there are more than 1000 keys? Pagination Required!
             return resolve(entry)
-          })
-          .catch(reject)
-      } catch (error) {
-        return reject(error)
-      }
-    })
-  }
-
-  public delete (input: any) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        debug(`Deleting: ${JSON.stringify(input)}`)
-        const matches: any = await this.fetch(input.uid)
-        const Keys: any = await this.fetch(input.uid, true)
-        // what if there are more than 1 matches? TODO: Investigate
-        if (matches.length === 0) {
-          return resolve(input)
-        }
-        const datas: any[] = map(matches, 'data')
-
-        if (input.content_type_uid === this.keys.assets) {
-          await this.assetStore.delete(datas)
-        }
-        const params = cloneDeep(this.config.uploadParams)
-        delete params.ACL
-
-        params.Delete = {
-          Objects: [],
-          Quiet: false
-        }
-        Keys.forEach((data) => {
-          params.Delete.Objects.push({
-            Key: data.Key
-          })
-        })
-
-        // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#listObjects-property
-        // params.RequestPayer = 'requester'
-
-        return this.s3.deleteObjects(params)
-          .on('httpUploadProgress', debug)
-          .on('error', reject)
-          .promise()
-          .then((s3Response) => {
-            debug(`deleteObject response: ${JSON.stringify(s3Response, null, 2)}`)
-            
-            // TODO: Consideration, what if there are more than 1000 keys? Pagination Required!
-            return resolve(input)
           })
           .catch(reject)
       } catch (error) {

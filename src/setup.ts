@@ -27,14 +27,14 @@ export const init = (config) => {
       // Step 2: Set up bucket-versioning
       await factory('putBucketVersioning', {
         Bucket: config.bucketName,
-        VersioningConfiguration: { MFADelete: 'Disabled', Status: 'Enabled' }
+        VersioningConfiguration: { MFADelete: 'Disabled', Status: 'Enabled' },
       })
 
       // Step 3 (Optional): Setup bucket's CORS policy
       if (typeof config.CORSConfiguration === 'object' && !(config.CORSConfiguration instanceof Array)) {
         await factory('putBucketCors', {
           Bucket: config.bucketName,
-          CORSConfiguration: config.CORSConfiguration
+          CORSConfiguration: config.CORSConfiguration,
         })
       }
 
@@ -42,7 +42,7 @@ export const init = (config) => {
       if (typeof config.Policy === 'object' && !(config.Policy instanceof Array)) {
         await factory('putBucketPolicy', {
           Bucket: config.bucketName,
-          Policy: JSON.stringify(config.Policy)
+          Policy: JSON.stringify(config.Policy),
         })
       }
 

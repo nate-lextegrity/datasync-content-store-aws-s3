@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.validateDeletedObject = exports.validateUnpublishedObject = exports.validatePublishedObject = exports.validateLogger = exports.validateConfig = void 0;
 const lodash_1 = require("lodash");
 const config_1 = require("../config");
 const requiredKeys = config_1.config.contentStore.internal.requiredKeys;

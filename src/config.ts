@@ -14,10 +14,10 @@ export const config = {
     apiVersion: '2006-03-01', // Required
     bucketParams: {
       // Bucket: '', // Required
-      ACL: 'public-read'
+      ACL: 'public-read',
     },
     uploadParams: {
-      ACL: 'public-read'
+      ACL: 'public-read',
     },
     CORSConfiguration: {
       CORSRules: [
@@ -26,9 +26,9 @@ export const config = {
           AllowedMethods: ['PUT', 'POST', 'GET', 'DELETE'],
           AllowedOrigins: ['*'],
           ExposeHeaders: [],
-          MaxAgeSeconds: 3000
-        }
-      ]
+          MaxAgeSeconds: 3000,
+        },
+      ],
     },
     Policy: {
       Version: '2012-10-17',
@@ -39,22 +39,22 @@ export const config = {
           Principal: '*',
           Action: ['s3:GetObject'],
           // Resource: ['arn:aws:s3:::<name>/*'] // Required
-        }
-      ]
+        },
+      ],
     },
     internal: {
       keys: {
         assets: '_assets',
-        content_type_uid: '_content_types'
+        content_type_uid: '_content_types',
       },
       unwantedKeys: {
         asset: {
-          action: true,
-          checkpoint: true,
+          "action": true,
+          "checkpoint": true,
           'data.created_by': true,
-          event_at: true,
-          type: true,
-          'data.updated_by': true
+          "event_at": true,
+          "type": true,
+          'data.updated_by': true,
         },
         contentType: {
           'data.created_by': true,
@@ -62,16 +62,16 @@ export const config = {
           'data.DEFAULT_ACL': true,
           'data.SYS_ACL': true,
           'data.abilities': true,
-          'data.last_activity': true
+          'data.last_activity': true,
         },
         entry: {
-          action: true,
-          checkpoint: true,
+          "action": true,
+          "checkpoint": true,
           'data.created_by': true,
-          event_at: true,
-          type: true,
-          'data.updated_by': true
-        }
+          "event_at": true,
+          "type": true,
+          'data.updated_by': true,
+        },
       },
       requiredKeys: {
         asset: {
@@ -88,8 +88,8 @@ export const config = {
         entry: {
           uid: true,
           _version: true,
-        }
-      }
-    }
-  }
+        },
+      },
+    },
+  },
 }

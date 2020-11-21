@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.config = void 0;
 exports.config = {
     contentStore: {
         patterns: {
@@ -11,10 +12,10 @@ exports.config = {
         region: 'us-east-1',
         apiVersion: '2006-03-01',
         bucketParams: {
-            ACL: 'public-read'
+            ACL: 'public-read',
         },
         uploadParams: {
-            ACL: 'public-read'
+            ACL: 'public-read',
         },
         CORSConfiguration: {
             CORSRules: [
@@ -23,9 +24,9 @@ exports.config = {
                     AllowedMethods: ['PUT', 'POST', 'GET', 'DELETE'],
                     AllowedOrigins: ['*'],
                     ExposeHeaders: [],
-                    MaxAgeSeconds: 3000
-                }
-            ]
+                    MaxAgeSeconds: 3000,
+                },
+            ],
         },
         Policy: {
             Version: '2012-10-17',
@@ -35,22 +36,22 @@ exports.config = {
                     Effect: 'Allow',
                     Principal: '*',
                     Action: ['s3:GetObject'],
-                }
-            ]
+                },
+            ],
         },
         internal: {
             keys: {
                 assets: '_assets',
-                content_type_uid: '_content_types'
+                content_type_uid: '_content_types',
             },
             unwantedKeys: {
                 asset: {
-                    action: true,
-                    checkpoint: true,
+                    "action": true,
+                    "checkpoint": true,
                     'data.created_by': true,
-                    event_at: true,
-                    type: true,
-                    'data.updated_by': true
+                    "event_at": true,
+                    "type": true,
+                    'data.updated_by': true,
                 },
                 contentType: {
                     'data.created_by': true,
@@ -58,16 +59,16 @@ exports.config = {
                     'data.DEFAULT_ACL': true,
                     'data.SYS_ACL': true,
                     'data.abilities': true,
-                    'data.last_activity': true
+                    'data.last_activity': true,
                 },
                 entry: {
-                    action: true,
-                    checkpoint: true,
+                    "action": true,
+                    "checkpoint": true,
                     'data.created_by': true,
-                    event_at: true,
-                    type: true,
-                    'data.updated_by': true
-                }
+                    "event_at": true,
+                    "type": true,
+                    'data.updated_by': true,
+                },
             },
             requiredKeys: {
                 asset: {
@@ -84,8 +85,8 @@ exports.config = {
                 entry: {
                     uid: true,
                     _version: true,
-                }
-            }
-        }
-    }
+                },
+            },
+        },
+    },
 };

@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -11,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.S3 = void 0;
 const debug_1 = __importDefault(require("debug"));
 const lodash_1 = require("lodash");
 const index_1 = require("./util/index");
@@ -27,7 +29,7 @@ class S3 {
         this.patterns = {
             asset: this.config.patterns.asset.split('/'),
             entry: this.config.patterns.entry.split('/'),
-            contentType: this.config.patterns.contentType.split('/')
+            contentType: this.config.patterns.contentType.split('/'),
         };
     }
     publish(publishedObject) {
@@ -45,12 +47,12 @@ class S3 {
                     locale: clonedObject.locale,
                     uid: clonedObject.uid,
                     content_type_uid: clonedObject.content_type_uid,
-                    data: clonedObject.data
+                    data: clonedObject.data,
                 };
                 const contentType = {
                     uid: clonedObject.content_type_uid,
                     content_type_uid: this.keys.content_type_uid,
-                    data: clonedObject.content_type
+                    data: clonedObject.content_type,
                 };
                 validations_1.validatePublishedObject(entry.data, this.requiredKeys.entry);
                 validations_1.validatePublishedObject(contentType.data, this.requiredKeys.contentType);
@@ -116,6 +118,45 @@ class S3 {
             return this.unpublishAsset(unpublishedObject);
         }
         return this.unpublishEntry(unpublishedObject);
+    }
+    delete(input) {
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                debug(`Deleting: ${JSON.stringify(input)}`);
+                const matches = yield this.fetch(input.uid);
+                const Keys = yield this.fetch(input.uid, true);
+                if (matches.length === 0) {
+                    return resolve(input);
+                }
+                const datas = lodash_1.map(matches, 'data');
+                if (input.content_type_uid === this.keys.assets) {
+                    yield this.assetStore.delete(datas);
+                }
+                const params = lodash_1.cloneDeep(this.config.uploadParams);
+                delete params.ACL;
+                params.Delete = {
+                    Objects: [],
+                    Quiet: false,
+                };
+                Keys.forEach((data) => {
+                    params.Delete.Objects.push({
+                        Key: data.Key,
+                    });
+                });
+                return this.s3.deleteObjects(params)
+                    .on('httpUploadProgress', debug)
+                    .on('error', reject)
+                    .promise()
+                    .then((s3Response) => {
+                    debug(`deleteObject response: ${JSON.stringify(s3Response, null, 2)}`);
+                    return resolve(input);
+                })
+                    .catch(reject);
+            }
+            catch (error) {
+                return reject(error);
+            }
+        }));
     }
     searchS3(uid) {
         return new Promise((resolve, reject) => {
@@ -285,45 +326,6 @@ class S3 {
                     .then((s3Response) => {
                     debug(`deleteObject response: ${JSON.stringify(s3Response, null, 2)}`);
                     return resolve(entry);
-                })
-                    .catch(reject);
-            }
-            catch (error) {
-                return reject(error);
-            }
-        }));
-    }
-    delete(input) {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                debug(`Deleting: ${JSON.stringify(input)}`);
-                const matches = yield this.fetch(input.uid);
-                const Keys = yield this.fetch(input.uid, true);
-                if (matches.length === 0) {
-                    return resolve(input);
-                }
-                const datas = lodash_1.map(matches, 'data');
-                if (input.content_type_uid === this.keys.assets) {
-                    yield this.assetStore.delete(datas);
-                }
-                const params = lodash_1.cloneDeep(this.config.uploadParams);
-                delete params.ACL;
-                params.Delete = {
-                    Objects: [],
-                    Quiet: false
-                };
-                Keys.forEach((data) => {
-                    params.Delete.Objects.push({
-                        Key: data.Key
-                    });
-                });
-                return this.s3.deleteObjects(params)
-                    .on('httpUploadProgress', debug)
-                    .on('error', reject)
-                    .promise()
-                    .then((s3Response) => {
-                    debug(`deleteObject response: ${JSON.stringify(s3Response, null, 2)}`);
-                    return resolve(input);
                 })
                     .catch(reject);
             }

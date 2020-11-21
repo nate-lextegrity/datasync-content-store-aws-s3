@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.start = exports.getConfig = exports.setAssetStore = exports.setConfig = void 0;
 const lodash_1 = require("lodash");
 const config_1 = require("./config");
 const s3_1 = require("./s3");
