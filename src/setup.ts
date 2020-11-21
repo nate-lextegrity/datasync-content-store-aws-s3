@@ -8,8 +8,10 @@ let S3
 
 const factory = (method, config) => {
   debug(`Factory: ${JSON.stringify(config)}`)
+
   return S3[method](config).promise().then((result) => {
     debug(`Result: ${JSON.stringify(result)}`)
+
     return
   })
 }

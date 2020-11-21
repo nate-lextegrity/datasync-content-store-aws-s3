@@ -359,6 +359,7 @@ export class S3 implements IContentStore {
           s3Response.Contents.forEach((Content: IContents) => {
             Contents.push(Content)
           })
+
           return resolve()
         })
         .catch(reject)
@@ -368,11 +369,11 @@ export class S3 implements IContentStore {
   private fetch(uid: string, isDelete: boolean = false) {
     return new Promise(async (resolve, reject) => {
       try {
-        const Prefixes: Array<{ Prefix: string }> = (await this.searchS3(uid) as Array<{ Prefix: string}>)
+        const Prefixes: { Prefix: string }[] = (await this.searchS3(uid) as { Prefix: string}[])
         const UniqPrefixes = uniqBy(Prefixes, 'Prefix')
         debug(`Unique prefixes found ${JSON.stringify(UniqPrefixes)}`)
         const Contents: IContents[] = []
-        const promises: Array<Promise<any>> = []
+        const promises: Promise<any>[] = []
 
         UniqPrefixes.forEach((CommonPrefix) => {
           promises.push(this.fetchContents(CommonPrefix.Prefix, Contents))
@@ -381,7 +382,7 @@ export class S3 implements IContentStore {
         return Promise.all(promises)
           .then(() => {
             const UniqContents: IContents[] = uniqBy(Contents, 'Key')
-            const promises2: Array<Promise<any>> = []
+            const promises2: Promise<any>[] = []
             const Items: IContents[] = []
             debug(`Unique Contents found: ${JSON.stringify(UniqContents)}`)
 
@@ -408,7 +409,7 @@ export class S3 implements IContentStore {
             if (isDelete) {
               return Items
             }
-            const promises3: Array<Promise<any>> = []
+            const promises3: Promise<any>[] = []
             const ItemsData: any = []
             Items.forEach((Item) => {
               promises3.push(this.getObject(Item, ItemsData))
@@ -445,6 +446,7 @@ export class S3 implements IContentStore {
           const data = JSON.parse(s3Response.Body)
           // TODO: Consideration, what if there are more than 1000 keys? Pagination Required!
           ItemsData.push(data)
+
           return resolve()
         })
         .catch(reject)

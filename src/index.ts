@@ -70,6 +70,7 @@ export const start = (assetStoreInstance?: IAssetStore, config?: IConfig) => {
       appConfig = merge(internalConfig, appConfig, config || {})
       validateConfig(appConfig.contentStore)
       assetStore = assetStoreInstance || assetStore
+
       return init(appConfig.contentStore)
         .then((awsInstance) => {
           const s3 = new S3(assetStore, awsInstance, appConfig)

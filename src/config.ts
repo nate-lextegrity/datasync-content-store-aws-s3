@@ -49,11 +49,11 @@ export const config = {
       },
       unwantedKeys: {
         asset: {
-          "action": true,
-          "checkpoint": true,
+          'action': true,
+          'checkpoint': true,
           'data.created_by': true,
-          "event_at": true,
-          "type": true,
+          'event_at': true,
+          'type': true,
           'data.updated_by': true,
         },
         contentType: {
@@ -65,11 +65,11 @@ export const config = {
           'data.last_activity': true,
         },
         entry: {
-          "action": true,
-          "checkpoint": true,
+          'action': true,
+          'checkpoint': true,
           'data.created_by': true,
-          "event_at": true,
-          "type": true,
+          'event_at': true,
+          'type': true,
           'data.updated_by': true,
         },
       },
