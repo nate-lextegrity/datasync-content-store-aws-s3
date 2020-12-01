@@ -5,7 +5,7 @@
   "description": "Backup data published from Contentstack onto AWS S3 buckets",
   "main": "dist",
   "dependencies": {
-    "@contentstack/webhook-listener": "https://github.com/worknate/webhook-listener#upgrades",
+    "@contentstack/webhook-listener": "git+https://github.com/nate-lextegrity/webhook-listener.git#upgrades",
     "aws-sdk": "^2.797.0",
     "debug": "^4.3.1",
     "lodash": "^4.17.20"
