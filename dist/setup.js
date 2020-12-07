@@ -17,40 +17,61 @@ const aws_sdk_1 = __importDefault(require("aws-sdk"));
 const debug_1 = __importDefault(require("debug"));
 const util_1 = require("./util");
 const debug = debug_1.default('cs-s3-setup');
-let S3;
-const factory = (method, config) => {
-    debug(`Factory: ${JSON.stringify(config)}`);
-    return S3[method](config).promise().then((result) => {
-        debug(`Result: ${JSON.stringify(result)}`);
-        return;
+const factory = (s3, method, config) => {
+    debug(`${method} config: ${JSON.stringify(config)}`);
+    return s3[method](config).promise().then((result) => {
+        debug(`${method} result: ${JSON.stringify(result)}`);
+        return result;
     });
 };
 exports.init = (config) => {
     return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+        let s3;
         try {
             config = util_1.formatConfig(config);
             const awsConfig = util_1.buildAWSConfig(config);
-            S3 = new aws_sdk_1.default.S3(awsConfig);
-            yield factory('createBucket', config.bucketParams);
-            yield factory('putBucketVersioning', {
+            s3 = new aws_sdk_1.default.S3(awsConfig);
+            yield s3.headBucket({ Bucket: config.bucketParams.Bucket }).promise()
+                .catch((err) => {
+                if (err) {
+                    if (err.statusCode == 409) {
+                        debug(`Bucket ${config.bucketParams.Bucket} has been created already and you don't have access`);
+                        throw (err);
+                    }
+                    else {
+                        return factory(s3, 'createBucket', config.bucketParams);
+                    }
+                }
+            });
+            yield factory(s3, 'putBucketVersioning', {
                 Bucket: config.bucketName,
                 VersioningConfiguration: { MFADelete: 'Disabled', Status: 'Enabled' },
             });
             if (typeof config.CORSConfiguration === 'object' && !(config.CORSConfiguration instanceof Array)) {
-                yield factory('putBucketCors', {
+                yield factory(s3, 'putBucketCors', {
                     Bucket: config.bucketName,
                     CORSConfiguration: config.CORSConfiguration,
                 });
             }
             if (typeof config.Policy === 'object' && !(config.Policy instanceof Array)) {
-                yield factory('putBucketPolicy', {
+                yield factory(s3, 'putBucketPolicy', {
                     Bucket: config.bucketName,
                     Policy: JSON.stringify(config.Policy),
                 });
             }
-            return resolve(S3);
+            return resolve(s3);
         }
         catch (error) {
+            if (error.code) {
+                if (error.code == 'OperationAborted') {
+                    debug(`Init: OperationAborted; bucket being created or recently deleted`);
+                    return resolve(s3);
+                }
+                else if (error.code == 'BucketAlreadyOwnedByYou') {
+                    debug(`Init: BucketAlreadyOwnedByYou; bucket already created and you own it`);
+                    return resolve(s3);
+                }
+            }
             return reject(error);
         }
     }));
